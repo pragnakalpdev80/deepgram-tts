@@ -4,6 +4,7 @@ import base64
 import asyncio
 import wave
 import os
+import audioop
 import json
 import logging
 import websockets
@@ -32,12 +33,13 @@ class TTSConsumer(AsyncWebsocketConsumer):
 
         self.audio_file_path = f"media/{self.scope['user']}_{datetime.now().strftime("%Y%m%d%H%M%S%z")}.wav"
         self.file = wave.open(self.audio_file_path, 'wb')
-        self.sample_rate = 24000
+        self.model = "aura-2-thalia-en"
+        self.sample_rate = 8000
         self.file.setnchannels(1)
-        self.file.setsampwidth(2)
+        self.file.setsampwidth(4)
         self.file.setframerate(self.sample_rate)
 
-        deepgram_url = f'wss://api.deepgram.com/v1/speak?model=aura-2-thalia-en&encoding=linear16&sample_rate={self.sample_rate}'
+        deepgram_url = f'wss://api.deepgram.com/v1/speak?model={self.model}&encoding=mulaw&sample_rate={self.sample_rate}'
         headers = {
             "Authorization": f"Token {DEEPGRAM_API_KEY}",
             "Content-Type": "application/json"
@@ -72,7 +74,11 @@ class TTSConsumer(AsyncWebsocketConsumer):
             async for data in self.dg_connect:
                 if isinstance(data, bytes):
                     logger.info(f"Chunks Recieved: {data}")
-                    self.file.writeframes(data)
+                    try:
+                        linear_data=audioop.ulaw2lin(data,4)
+                    except Exception as e:
+                        print(e)
+                    self.file.writeframesraw(linear_data)
                     await self.send(bytes_data=data)
                 else:
                     logger.info(f"{data}")
@@ -94,9 +100,11 @@ class CartAsiaConsumer(AsyncWebsocketConsumer):
 
         self.audio_file_path = f"media/{self.scope['user']}_{datetime.now().strftime("%Y%m%d%H%M%S%z")}.wav"
         self.file = wave.open(self.audio_file_path, 'wb')
-        self.sample_rate = 24000
+        self.sample_rate = 8000
+        self.model_id = "sonic-3"
+        self.voice_id = "a0e99841-438c-4a64-b679-ae501e7d6091"
         self.file.setnchannels(1)
-        self.file.setsampwidth(2)
+        self.file.setsampwidth(4)
         self.file.setframerate(self.sample_rate)
 
         deepgram_url = f'wss://api.cartesia.ai/tts/websocket?cartesia_version=2026-03-01'
@@ -125,17 +133,17 @@ class CartAsiaConsumer(AsyncWebsocketConsumer):
         if text_data:
             logger.info(f"{self.scope['user']} sent {text_data}")
             data={
-                "model_id": "sonic-3",
+                "model_id": self.model_id,
                 "transcript": text_data,
                 "voice": {
                     "mode": "id",
-                    "id": "a0e99841-438c-4a64-b679-ae501e7d6091"
+                    "id": self.voice_id
                 },
                 "language": "en",
                 "context_id": str(uuid.uuid4()),
                 "output_format": {
                     "container": "raw",
-                    "encoding": "pcm_s16le",
+                    "encoding": "pcm_mulaw",
                     "sample_rate": self.sample_rate
                 },
                 "add_timestamps": True,
@@ -153,7 +161,8 @@ class CartAsiaConsumer(AsyncWebsocketConsumer):
                     if data_dict["type"] == "chunk":
                         await self.send(text_data=data)
                         decoded_data = base64.b64decode(data_dict["data"])
-                        self.file.writeframes(decoded_data)
+                        linear_data = audioop.ulaw2lin(decoded_data,4)
+                        self.file.writeframesraw(linear_data)
                         logger.info(f"Chunks Recieved: {data}")
                     else:
                         logger.info(f"{data}")

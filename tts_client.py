@@ -1,12 +1,14 @@
 import websockets
 import asyncio
 import pyaudio
+import audioop
 
 
 async def data_reciever(connect,stream):
                 async for data in connect:
                     if isinstance(data, bytes):
-                        stream.write(data)
+                        data2 = audioop.ulaw2lin(data,4)
+                        stream.write(data2)
                         print(f"{data}")
                     else:
                         print(f"{data}")

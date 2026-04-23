@@ -3,6 +3,7 @@ import asyncio
 import pyaudio
 import json
 import base64
+import audioop
 
 
 async def data_reciever(connect,stream):
@@ -12,7 +13,8 @@ async def data_reciever(connect,stream):
             if data_dict["type"] == "chunk":
                 print(f"{data}")
                 decoded_data = base64.b64decode(data_dict["data"])
-                stream.write(decoded_data)
+                linear_data = audioop.ulaw2lin(decoded_data,2)
+                stream.write(linear_data)
             else:
                 print(f"{data}")
 
@@ -21,7 +23,7 @@ async def test_tts_client():
 
     FORMAT = pyaudio.paInt16
     CHANNELS = 1
-    RATE = 24000
+    RATE = 8000
     CHUNK = 1024
     p = pyaudio.PyAudio()
     stream = p.open(format=FORMAT,
