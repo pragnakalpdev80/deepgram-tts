@@ -5,13 +5,13 @@ import audioop
 
 
 async def data_reciever(connect,stream):
-                async for data in connect:
-                    if isinstance(data, bytes):
-                        data2 = audioop.ulaw2lin(data,4)
-                        stream.write(data2)
-                        print(f"{data}")
-                    else:
-                        print(f"{data}")
+    async for data in connect:
+        if isinstance(data, bytes):
+            data2 = audioop.ulaw2lin(data,4)
+            stream.write(data2)
+            print(f"{data}")
+        else:
+            print(f"{data}")
 
 async def test_tts_client():
     local_websocket = 'ws://127.0.0.1:8000/ws/tts'

@@ -11,6 +11,7 @@ import websockets
 from datetime import datetime
 from config.settings import BASE_DIR
 import uuid
+from .models import TTSModels
 
 logger = logging.getLogger("api")
 
@@ -23,6 +24,8 @@ CARTESIA_API_KEY = env('CARTESIA_API_KEY')
 class TTSConsumer(AsyncWebsocketConsumer):
     
     async def connect(self):
+        query_string = self.scope['query_string'].decode()
+        print(query_string)
         logger.info(f"{self.scope['user']} logged on to the {self.scope['path']}")
         self.room_group_name = 'tts'
         
@@ -33,7 +36,7 @@ class TTSConsumer(AsyncWebsocketConsumer):
 
         self.audio_file_path = f"media/{self.scope['user']}_{datetime.now().strftime("%Y%m%d%H%M%S%z")}.wav"
         self.file = wave.open(self.audio_file_path, 'wb')
-        self.model = "aura-2-thalia-en"
+        self.model = query_string
         self.sample_rate = 8000
         self.file.setnchannels(1)
         self.file.setsampwidth(4)

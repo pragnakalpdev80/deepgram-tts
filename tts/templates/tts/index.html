@@ -1,19 +1,22 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Text to Speech Implementation</title>
+    <title>Text to Speech - Select Model</title>
   </head>
   <body>
-    <form method="POST">
-    {% csrf_token %}
     <h1>TTS With Django</h1>
-    {{form.as_p}}
-    <button type="submit">Register</button>
-    </form>
-    {% if messages %}
-        {% for message in messages %}
-            {{ message }}
+    <form method="POST" action="/">
+      {% csrf_token %}
+      <label for="model">Select Model:</label>
+      <select name="model" id="model">
+        {% for m in models %}
+          <option value="{{ m.id }}">{{ m.tool.name }} - {{ m.name }}</option>
+        {% empty %}
+          <option disabled>No models available</option>
         {% endfor %}
-    {% endif %}
+      </select>
+      <br><br>
+      <button type="submit">Connect</button>
+    </form>
   </body>
 </html>

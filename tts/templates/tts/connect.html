@@ -1,18 +1,49 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Text to Speech Implementation</title>
+    <title>TTS - {{ model_name }}</title>
   </head>
   <body>
-    <form method="POST">
-    {% csrf_token %}
-    <h1>TTS With Django</h1>
-    <button type="submit">Register</button>
-    </form>
-    {% if messages %}
-        {% for message in messages %}
-            {{ message }}
-        {% endfor %}
-    {% endif %}
+    <h1>TTS Chat - {{ model_name }}</h1>
+    <p>Status: <span id="status">Connecting...</span></p>
+
+    <input type="text" name="message" id="message" placeholder="Type text to speak" size="50">
+    <button onclick="sendMessage()">Send</button>
+    <br><br>
+    <a href="/">Back to model selection</a>
+
+    <script>
+    var tool = "{{ tool }}";
+    var modelName = "{{ model_name }}";
+    if( tool === "cartesia" ){
+        wsUrl= "ws://" + window.location.host + "/ws/cartesia/tts?" + modelName; 
+    }
+    else{ 
+        wsUrl="ws://" + window.location.host + "/ws/tts?" + modelName;
+    }
+
+    var socket = new WebSocket(wsUrl);
+   
+    socket.onopen = function() {
+    document.getElementById("status").innerText = "Connected (" + tool + " / " + modelName + ")";
+    };
+
+    socket.onclose = function() {
+    document.getElementById("status").innerText = "Disconnected";
+    };
+
+    socket.onerror = function(e) {
+    document.getElementById("status").innerText = "Error";
+    console.error(e);
+    };
+
+    function sendMessage() {
+        var msg = document.getElementById("message").value;
+        if (msg && socket.readyState === WebSocket.OPEN) {
+          socket.send(msg);
+          document.getElementById("message").value = "";
+        }
+    }
+    </script>
   </body>
 </html>
