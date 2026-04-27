@@ -9,9 +9,10 @@
 
     <input type="text" name="message" id="message" placeholder="Type text to speak" size="50">
     <button onclick="sendMessage()">Send</button>
+    <button onclick="disconnect()">Disconnect</button>
     <br><br>
     <a href="/">Back to model selection</a>
-
+    <p>Message: <span id="receive">No message</span></p>
     <script>
     var tool = "{{ tool }}";
     var modelName = "{{ model_name }}";
@@ -37,12 +38,19 @@
     console.error(e);
     };
 
+    socket.onmessage = function(message){
+      document.getElementById("receive").innerText = message.data;
+    }
+
     function sendMessage() {
         var msg = document.getElementById("message").value;
         if (msg && socket.readyState === WebSocket.OPEN) {
           socket.send(msg);
           document.getElementById("message").value = "";
         }
+    }
+    function disconnect(){
+      socket.close()
     }
     </script>
   </body>

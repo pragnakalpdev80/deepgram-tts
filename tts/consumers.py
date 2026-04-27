@@ -93,6 +93,8 @@ class TTSConsumer(AsyncWebsocketConsumer):
 class CartAsiaConsumer(AsyncWebsocketConsumer):
     
     async def connect(self):
+        query_string = self.scope['query_string'].decode()
+        print(query_string)
         logger.info(f"{self.scope['user']} logged on to the {self.scope['path']}")
         self.room_group_name = 'tts'
         
@@ -104,7 +106,7 @@ class CartAsiaConsumer(AsyncWebsocketConsumer):
         self.audio_file_path = f"media/{self.scope['user']}_{datetime.now().strftime("%Y%m%d%H%M%S%z")}.wav"
         self.file = wave.open(self.audio_file_path, 'wb')
         self.sample_rate = 8000
-        self.model_id = "sonic-3"
+        self.model_id = query_string
         self.voice_id = "a0e99841-438c-4a64-b679-ae501e7d6091"
         self.file.setnchannels(1)
         self.file.setsampwidth(4)
