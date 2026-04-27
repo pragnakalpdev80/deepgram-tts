@@ -14,7 +14,7 @@ async def data_reciever(connect,stream):
             print(f"{data}")
 
 async def test_tts_client():
-    local_websocket = 'ws://127.0.0.1:8000/ws/tts'
+    local_websocket = 'ws://127.0.0.1:8000/ws/tts?aura-2-thalia-en'
 
     FORMAT = pyaudio.paInt16
     CHANNELS = 1

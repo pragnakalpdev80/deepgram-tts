@@ -1,4 +1,5 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.db import database_sync_to_async
 import environ
 import base64
 import asyncio
@@ -11,6 +12,8 @@ import websockets
 from datetime import datetime
 from config.settings import BASE_DIR
 import uuid
+from urllib.parse import parse_qs
+
 from .models import TTSModels
 
 logger = logging.getLogger("api")
@@ -23,12 +26,24 @@ CARTESIA_API_KEY = env('CARTESIA_API_KEY')
 
 class TTSConsumer(AsyncWebsocketConsumer):
     
+    @database_sync_to_async
+    def model_is_valid(self, model):
+        try:
+            ttsmodel = TTSModels.objects.select_related("tool").filter(name=model).first()
+            return ttsmodel.tool.name == 'Deepgram'
+        except Exception as e:
+            return False
+
     async def connect(self):
         query_string = self.scope['query_string'].decode()
-        print(query_string)
+        is_valid = await self.model_is_valid(query_string)
         logger.info(f"{self.scope['user']} logged on to the {self.scope['path']}")
         self.room_group_name = 'tts'
         
+        if not is_valid:
+            await self.close()
+            return
+
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
@@ -60,10 +75,16 @@ class TTSConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, code):
         logger.info(f"TTS WebSocket disconnected with code {code}")
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
-        self.file.close()
-        if self.dg_connect:
-            await self.dg_connect.send(json.dumps({"type": "Close"}))
-            logger.info(f"Deepgram WebSocket Disconnected.")
+        try:
+            self.file.close()
+        except:
+            pass
+        try:
+            if self.dg_connect:
+                await self.dg_connect.send(json.dumps({"type": "Close"}))
+                logger.info(f"Deepgram WebSocket Disconnected.")
+        except:
+            pass
 
     async def receive(self, text_data = None, bytes_data = None):
         if text_data:
@@ -92,12 +113,25 @@ class TTSConsumer(AsyncWebsocketConsumer):
                       
 class CartAsiaConsumer(AsyncWebsocketConsumer):
     
+    @database_sync_to_async
+    def model_is_valid(self, model):
+        try:
+            ttsmodel = TTSModels.objects.select_related("tool").filter(name=model).first()
+            return ttsmodel.tool.name == 'Cartesia'
+        except Exception as e:
+            return False
+        
     async def connect(self):
         query_string = self.scope['query_string'].decode()
-        print(query_string)
+        is_valid = await self.model_is_valid(query_string)
+        
         logger.info(f"{self.scope['user']} logged on to the {self.scope['path']}")
         self.room_group_name = 'tts'
         
+        if not is_valid:
+            await self.close()
+            return
+          
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
@@ -129,11 +163,18 @@ class CartAsiaConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, code):
         logger.info(f"TTS WebSocket disconnected with code {code}")
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
-        self.file.close()
-        if self.dg_connect:
-            self.dg_connect.close(code)
-            logger.info(f"Cartesia WebSocket Disconnected.")
+        try:
+            self.file.close()
+        except:
+            pass
 
+        try:
+            if self.dg_connect:
+                self.dg_connect.close(code)
+                logger.info(f"Cartesia WebSocket Disconnected.")
+        except:
+            pass
+        
     async def receive(self, text_data = None, bytes_data = None):
         if text_data:
             logger.info(f"{self.scope['user']} sent {text_data}")

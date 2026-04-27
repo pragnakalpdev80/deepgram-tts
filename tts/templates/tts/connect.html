@@ -12,7 +12,7 @@
     <button onclick="disconnect()">Disconnect</button>
     <br><br>
     <a href="/">Back to model selection</a>
-    <p>Message: <span id="receive">No message</span></p>
+    <p>Message: <span id="receive"></span></p>
     <script>
     var tool = "{{ tool }}";
     var modelName = "{{ model_name }}";
@@ -39,7 +39,7 @@
     };
 
     socket.onmessage = function(message){
-      document.getElementById("receive").innerText = message.data;
+      document.getElementById("receive").innerText += message.data+"\n";
     }
 
     function sendMessage() {
