@@ -24,7 +24,31 @@
     }
 
     var socket = new WebSocket(wsUrl);
-   
+    let nextStartTime = 0;
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // function playByteArray(byteArray) {
+    //   var arrayBuffer = new ArrayBuffer(byteArray.length);
+    //   var bufferView = new Uint8Array(arrayBuffer);
+    //   for (i = 0; i < byteArray.length; i++) {
+    //       bufferView[i] = byteArray[i];
+    //   }
+    //   audioCtx.decodeAudioData(arrayBuffer, function(buffer) {
+    //       buf = buffer;
+    //       play();
+    //   });
+    // }
+
+    // function play() {
+    //     // Create a source node from the buffer
+    //     var source = audioCtx.createBufferSource();
+    //     source.buffer = buf;
+    //     // Connect to the final output node (the speakers)
+    //     source.connect(audioCtx.destination);
+    //     // Play immediately
+    //     source.start(0);
+    // }
+
     socket.onopen = function() {
     document.getElementById("status").innerText = "Connected (" + tool + " / " + modelName + ")";
     };
@@ -38,9 +62,38 @@
     console.error(e);
     };
 
-    socket.onmessage = function(message){
-      document.getElementById("receive").innerText += message.data+"\n";
-    }
+    // socket.onmessage = function(message){
+    //   playByteArray(message.data)
+    //   document.getElementById("receive").innerText += message.data+"\n";
+    // }
+
+    socket.onmessage = async function(event) {
+      if (event.data instanceof ArrayBuffer) {
+          // 1. Convert Int16 bytes to Float32
+          document.getElementById("receive").innerText += event.data+"\n";
+          const int16Data = new Int16Array(event.data);
+          const float32Data = new Float32Array(int16Data.length);
+          alert("1")
+          for (let i = 0; i < int16Data.length; i++) {
+              float32Data[i] = int16Data[i] / 32768.0; 
+          }
+          alert("2")
+          // 2. Create a buffer and play it
+          const buffer = audioCtx.createBuffer(1, float32Data.length, 8000);
+          buffer.copyToChannel(float32Data, 0);
+          alert("3")
+          const source = audioCtx.createBufferSource();
+          source.buffer = buffer;
+          source.connect(audioCtx.destination);
+          alert("4")
+          // 3. Queue the audio to prevent gaps
+          const currentTime = audioCtx.currentTime;
+          if (nextStartTime < currentTime) nextStartTime = currentTime;
+          source.start(nextStartTime);
+          nextStartTime += buffer.duration;
+          alert("5")
+          }      
+      };
 
     function sendMessage() {
         var msg = document.getElementById("message").value;

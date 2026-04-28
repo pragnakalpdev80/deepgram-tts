@@ -103,10 +103,11 @@ class TTSConsumer(AsyncWebsocketConsumer):
                     except Exception as e:
                         print(e)
                     self.file.writeframesraw(linear_data)
-                    await self.send(bytes_data=data)
+                    await self.send(bytes_data=linear_data)
+
                 else:
                     logger.info(f"{data}")
-                    await self.send(text_data=data)
+                    # await self.send(text_data=data)
         except Exception as e:
             logger.log(f"Unexpected Error: {e}")            
 
@@ -205,13 +206,15 @@ class CartAsiaConsumer(AsyncWebsocketConsumer):
                     logger.info(f"Chunks Recieved: {data}")
                     data_dict = json.loads(data)
                     if data_dict["type"] == "chunk":
-                        await self.send(text_data=data)
                         decoded_data = base64.b64decode(data_dict["data"])
+                        # print(decoded_data)
                         linear_data = audioop.ulaw2lin(decoded_data,4)
+                        # print(linear_data)
+                        await self.send(bytes_data=linear_data)
                         self.file.writeframesraw(linear_data)
                         logger.info(f"Chunks Recieved: {data}")
                     else:
                         logger.info(f"{data}")
-                        await self.send(text_data=data)
+                        # await self.send(text_data=data)
         except Exception as e:
             logger.log(f"Unexpected Error: {e}")   
