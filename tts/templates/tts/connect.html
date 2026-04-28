@@ -24,6 +24,7 @@
     }
 
     var socket = new WebSocket(wsUrl);
+    socket.binaryType = "arraybuffer";
     let nextStartTime = 0;
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -73,25 +74,25 @@
           document.getElementById("receive").innerText += event.data+"\n";
           const int16Data = new Int16Array(event.data);
           const float32Data = new Float32Array(int16Data.length);
-          alert("1")
+          console.log("1")
           for (let i = 0; i < int16Data.length; i++) {
               float32Data[i] = int16Data[i] / 32768.0; 
           }
-          alert("2")
+          console.log("2")
           // 2. Create a buffer and play it
-          const buffer = audioCtx.createBuffer(1, float32Data.length, 8000);
+          const buffer = audioCtx.createBuffer(2, float32Data.length, 8000);
           buffer.copyToChannel(float32Data, 0);
-          alert("3")
+          console.log("3")
           const source = audioCtx.createBufferSource();
           source.buffer = buffer;
           source.connect(audioCtx.destination);
-          alert("4")
+          console.log("4")
           // 3. Queue the audio to prevent gaps
           const currentTime = audioCtx.currentTime;
           if (nextStartTime < currentTime) nextStartTime = currentTime;
           source.start(nextStartTime);
           nextStartTime += buffer.duration;
-          alert("5")
+          console.log("5")
           }      
       };
 

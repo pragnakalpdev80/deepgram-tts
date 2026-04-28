@@ -99,7 +99,7 @@ class TTSConsumer(AsyncWebsocketConsumer):
                 if isinstance(data, bytes):
                     logger.info(f"Chunks Recieved: {data}")
                     try:
-                        linear_data=audioop.ulaw2lin(data,4)
+                        linear_data=audioop.ulaw2lin(data,2)
                     except Exception as e:
                         print(e)
                     self.file.writeframesraw(linear_data)
